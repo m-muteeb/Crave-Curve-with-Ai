@@ -36,7 +36,7 @@ const LoginScreen = ({ navigation }) => {
 
       // Store the token
       await AsyncStorage.setItem('authToken', token);
-
+//  git remote add new origin https://github.com/miangmuteeb/New-Crave-Curve.git
       // Navigate based on role
       if (role === 'manager') {
         navigation.navigate('SellerDashboardScreen');
