@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, Alert, ActivityIndicator, ImageBackground } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import auth from '@react-native-firebase/auth';
@@ -84,36 +84,39 @@ const AddProduct = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add Product</Text>
+    <ImageBackground
+      source={{ uri: 'https://example.com/background-image.jpg' }} // Add your image URL here
+      style={styles.container}
+    >
+      <Text style={styles.title}>Add Event</Text>
       <TextInput 
         style={styles.input} 
-        placeholder="Product Name" 
+        placeholder="Event Name" 
         onChangeText={setProductName} 
         value={productName} 
       />
       <TextInput 
         style={styles.input} 
-        placeholder="Price" 
+        placeholder="Event Date" 
         keyboardType="numeric" 
         onChangeText={setPrice} 
         value={price} 
       />
       <TextInput 
         style={styles.input} 
-        placeholder="Description" 
+        placeholder="Event Description" 
         onChangeText={setDescription} 
         value={description} 
       />
       <TextInput 
         style={styles.input} 
-        placeholder="Category" 
+        placeholder="Event Category" 
         onChangeText={setCategory} 
         value={category} 
       />
       <TextInput 
         style={styles.input} 
-        placeholder="Restaurant Name" 
+        placeholder="Venue" 
         onChangeText={setRestaurantName} 
         value={restaurantName} 
       />
@@ -128,10 +131,10 @@ const AddProduct = ({ navigation }) => {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Add Product</Text>
+          <Text style={styles.buttonText}>Add Event</Text>
         )}
       </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -139,11 +142,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff', // White background
     justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Adding a semi-transparent overlay for better readability
   },
   title: {
-    color: '#4CAF50', // Green color for title
+    color: '#fff', // White color for the title to contrast with the background
     fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -151,7 +154,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   input: {
-    backgroundColor: '#f0f0f0', // Light background for inputs
+    backgroundColor: '#f0f0f0', 
     color: '#000',
     borderRadius: 8,
     paddingHorizontal: 15,
@@ -164,7 +167,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   button: {
-    backgroundColor: '#4CAF50', // Green button
+    backgroundColor: '#008CBA', 
     padding: 15,
     borderRadius: 8,
     marginVertical: 12,
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   buttonText: {
-    color: '#fff', // White text on the button
+    color: '#fff', 
     fontSize: 18,
     fontWeight: 'bold',
   },

@@ -5,8 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import ExploreMoreScreen from '../screens/Explore/ExploreMoreScreen.js';
 
 // Auth Screens
-import LoginScreen from '../screens/Auth/LoginScreen';
-import RegisterScreen from '../screens/Auth/RegisterScreen';
+ import LoginScreen from '../screens/Auth/LoginScreen';
+ import RegisterScreen from '../screens/Auth/RegisterScreen';
 
 // Seller Dashboard Screens
 import SellerDashboardScreen from '../screens/SellerDashboard/SellerDashboardScreen';
@@ -27,7 +27,7 @@ const AppNavigator = () => {
   return (
   <Stack.Navigator screenOptions={{ headerShown: false }}> 
        {/* Exolore More Screen */}
-   <Stack.Screen name="ExploreMore" component={ExploreMoreScreen} /> 
+   <Stack.Screen name="ExploreMore" component={ExploreMoreScreen} />
   
            {/* Auth Screens */}
    <Stack.Screen name="RegisterScreen" component={RegisterScreen} />  
@@ -52,3 +52,4 @@ const AppNavigator = () => {
 
 export default AppNavigator;
 
+// git remote add new-origin https://github.com/miangmuteeb/Full_Final_PROJECT_CRAVE_CURVE.git

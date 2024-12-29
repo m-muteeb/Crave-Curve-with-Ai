@@ -13,7 +13,7 @@ app.use(express.json());
 // CORS configuration to allow the frontend from multiple origins
 app.use(cors({
     origin: [
-        "http://192.168.100.3:5000",  // Your mobile device IP address (if using mobile)
+        "http://172.16.50.211:5000",  // Your mobile device IP address (if using mobile)
         "http://localhost:5000",       // For local frontend testing
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -32,3 +32,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+// 

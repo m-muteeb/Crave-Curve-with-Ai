@@ -108,9 +108,9 @@ const SellerOrder = () => {
   return (
     <View style={styles.container}>
       {loading ? (
-        <Text style={styles.loadingText}>Loading orders...</Text>
+        <Text style={styles.loadingText}>Loading Bookings...</Text>
       ) : orders.length === 0 ? (
-        <Text style={styles.noOrdersText}>No orders to manage!</Text>
+        <Text style={styles.noOrdersText}>No Bookings to manage!</Text>
       ) : (
         <FlatList
           data={orders}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   acceptButton: {
-    backgroundColor: '#4caf50',
+    backgroundColor: '#0056D2',
     paddingVertical: 6,
     paddingHorizontal: 15,
     borderRadius: 5,

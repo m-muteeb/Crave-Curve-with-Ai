@@ -47,8 +47,8 @@ const BuyerOrder = () => {
       <Image source={{ uri: item.productImage }} style={styles.orderItemImage} />
       <View style={styles.orderItemDetails}>
         <Text style={styles.orderItemName}>{item.productName}</Text>
-        <Text style={styles.orderItemPrice}>Price: ${item.productPrice}</Text>
-        <Text style={styles.orderItemQuantity}>Quantity: {item.quantity}</Text>
+       
+
         <Text style={styles.orderItemDate}>
           Date: {item.orderDate?.toDate().toLocaleDateString() || 'N/A'}
         </Text>
@@ -62,7 +62,7 @@ const BuyerOrder = () => {
   return (
     <View style={styles.container}>
       {orders.length === 0 ? (
-        <Text style={styles.noOrdersText}>You haven't placed any orders yet!</Text>
+        <Text style={styles.noOrdersText}>You haven't Booked any Event yet!</Text>
       ) : (
         <FlatList
           data={orders}

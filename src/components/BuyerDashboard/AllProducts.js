@@ -73,7 +73,7 @@ const AllProducts = () => {
         ...product,
       });
       setCartAdded([...cartAdded, product.id]);
-      Alert.alert('Success', 'Product added to cart');
+      Alert.alert('Success', 'Event added to Event List Book it Now');
     } catch (error) {
       console.error('Error adding to cart:', error);
       Alert.alert('Error', 'Failed to add product to cart');
@@ -125,14 +125,14 @@ const AllProducts = () => {
       <FlatList
         ref={carouselRef}
         data={[
-          { id: '1', uri: 'https://img.freepik.com/free-photo/selection-beer-snacks-chips-fish-beer-sausages-table_99692-1152.jpg' },
-          { id: '2', uri: 'https://img.freepik.com/premium-photo/stewed-cabbage-with-mushrooms-tomato-sauce_2829-10283.jpg?w=740' },
-          { id: '3', uri: 'https://img.freepik.com/free-photo/top-view-delicious-burger-dark-background_140725-79568.jpg' },
+          { id: '1', uri: 'https://img.freepik.com/free-photo/decorated-banquet-hall-with-flowers_8353-10058.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
+          { id: '2', uri: 'https://img.freepik.com/free-vector/flat-style-wedding-people_24908-57580.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
+          { id: '3', uri: 'https://img.freepik.com/free-photo/man-pours-martini-cocktail-glasses-dinner-table_8353-614.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
         ]}
         renderItem={({ item }) => (
           <View style={[styles.carouselContent, { width: screenWidth }]}>
             <Image source={{ uri: item.uri }} style={styles.carouselImage} />
-            <Text style={styles.carouselText}>CraveCurve</Text>
+            <Text style={styles.carouselText}>Eventify</Text>
           </View>
         )}
         keyExtractor={(item) => item.id}
@@ -148,7 +148,7 @@ const AllProducts = () => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search products..."
+          placeholder="Search Events..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -178,10 +178,10 @@ const AllProducts = () => {
       <View style={styles.sortContainer}>
         <Text style={styles.sortText}>Sort by:</Text>
         <TouchableOpacity onPress={() => setSortOrder('asc')} style={styles.sortButton}>
-          <Text style={styles.sortButtonText}>Price: Low to High</Text>
+          <Text style={styles.sortButtonText}>Date:Recent to Old</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setSortOrder('desc')} style={styles.sortButton}>
-          <Text style={styles.sortButtonText}>Price: High to Low</Text>
+          <Text style={styles.sortButtonText}>Date:Old to Recent</Text>
         </TouchableOpacity>
       </View>
 
@@ -195,14 +195,14 @@ const AllProducts = () => {
           >
             <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
             <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.productPrice}>Category: {item.category}</Text>
             <TouchableOpacity
               style={styles.button}
               onPress={() => handleAddToCart(item)}
               disabled={cartAdded.includes(item.id)}
             >
               <Text style={styles.buttonText}>
-                {cartAdded.includes(item.id) ? 'Added to Cart' : 'Add to Cart'}
+                {cartAdded.includes(item.id) ? 'Already Added to Event List' : 'Add to Event List'}
               </Text>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -214,14 +214,14 @@ const AllProducts = () => {
 
       {/* Bottom Tabs */}
       <View style={styles.bottomTabs}>
-        <TouchableOpacity style={styles.tabButton} onPress={() => handleTabPress('Login')}>
-          <Text style={styles.tabText}>Home</Text>
+        <TouchableOpacity style={styles.tabButton} onPress={() => handleTabPress('ExploreMoreScreen')}>
+          <Text style={styles.tabText}>Explore</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabButton} onPress={() => handleTabPress('Cart')}>
-          <Text style={styles.tabText}>Cart</Text>
+          <Text style={styles.tabText}>Event List</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabButton} onPress={() => handleTabPress('BuyerOrder')}>
-          <Text style={styles.tabText}>Orders</Text>
+          <Text style={styles.tabText}>Bookings</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -249,8 +249,8 @@ const styles = StyleSheet.create({
   carouselText: {
     position: 'absolute',
     top: '50%',
-    left: '50%',
-    transform: [{ translateX: -100 }, { translateY: -30 }],
+    left: '58%',
+    transform: [{ translateX: -100 }, { translateY: -40 }],
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
@@ -271,14 +271,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f1f1',
     paddingHorizontal: 10,
     borderRadius: 5,
-    borderColor: '#4caf50',
+    borderColor: '#008CBA',
     borderWidth: 1,
   },
   clearButton: {
     marginLeft: 10,
   },
   clearText: {
-    color: '#4caf50',
+    color: '#008CBA',
   },
   categoryList: {
     marginVertical: 10,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   selectedCategory: {
     borderBottomWidth: 2,
-    borderColor: '#4caf50',
+    borderColor: '#008CBA',
   },
   sortContainer: {
     flexDirection: 'row',
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   sortButton: {
     marginLeft: 10,
-    backgroundColor: '#4caf50',
+    backgroundColor: '#008CBA',
     paddingVertical: 5,
     paddingHorizontal: 15,
     borderRadius: 5,
@@ -344,11 +344,11 @@ const styles = StyleSheet.create({
   productPrice: {
     marginTop: 5,
     fontSize: 14,
-    color: '#4caf50',
+    color: '#008CBA',
   },
   button: {
     marginTop: 10,
-    backgroundColor: '#4caf50',
+    backgroundColor: '#008CBA',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,

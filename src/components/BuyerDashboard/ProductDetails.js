@@ -61,7 +61,7 @@ const ProductDetails = ({ route }) => {
         ...product,
       });
       setCartAdded(true);
-      Alert.alert('Success', 'Product added to cart');
+      Alert.alert('Success', 'Event Added to Event List');
     } catch (error) {
       console.error('Error adding to cart:', error);
       Alert.alert('Error', 'Failed to add product to cart');
@@ -99,7 +99,7 @@ const ProductDetails = ({ route }) => {
       if (!sellerId) {
         Alert.alert('Error', 'Seller not found.');
         return;
-      }
+       }
 
       // Create the order document for the buyer
       const orderRef = await firestore().collection('orders').add({
@@ -134,7 +134,7 @@ const ProductDetails = ({ route }) => {
       setOrderModalVisible(false);
 
       // Alert user that the order has been placed successfully
-      Alert.alert('Success', 'Your order has been placed successfully!');
+      Alert.alert('Success', 'Your Event has been Booked successfully!');
     } catch (error) {
       console.error('Error placing order:', error);
       Alert.alert('Error', 'Failed to place the order.');
@@ -187,7 +187,7 @@ const ProductDetails = ({ route }) => {
           disabled={cartAdded}
         >
           <Text style={styles.buttonText}>
-            {cartAdded ? 'Added to Cart' : 'Add to Cart'}
+            {cartAdded ? 'Added to Event List' : 'Add to Event List'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -197,7 +197,7 @@ const ProductDetails = ({ route }) => {
           style={[styles.button, styles.orderButton]}
           onPress={() => setOrderModalVisible(true)}
         >
-          <Text style={styles.buttonText}>Order Now</Text>
+          <Text style={styles.buttonText}>Book Now</Text>
         </TouchableOpacity>
       </View>
 
@@ -265,7 +265,7 @@ const ProductDetails = ({ route }) => {
               style={[styles.button, styles.orderButton]}
               onPress={handleOrderProduct}
             >
-              <Text style={styles.buttonText}>Confirm Order</Text>
+              <Text style={styles.buttonText}>Confirm</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
@@ -295,12 +295,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#008CBA',
     marginBottom: 10,
   },
   productPrice: {
     fontSize: 24,
-    color: '#4CAF50',
+    color: '#008CBA',
     marginBottom: 10,
   },
   productDescription: {
@@ -324,10 +324,10 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   cartButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#008CBA',
   },
   orderButton: {
-    backgroundColor: '#087f23',
+    backgroundColor: '#008CBA',
   },
   cancelButton: {
     backgroundColor: '#d32f2f',
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addCommentButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#008CBA',
     marginTop: 10,
   },
   modalContainer: {

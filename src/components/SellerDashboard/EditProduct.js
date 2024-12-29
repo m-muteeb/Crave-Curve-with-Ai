@@ -136,7 +136,7 @@ const ManageProducts = () => {
     <View style={styles.productCard}>
       <Image source={{ uri: item.imageUrl }} style={styles.productImage} resizeMode="cover" />
       <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productPrice}>Price: ${item.price}</Text>
+      <Text style={styles.productPrice}>Venue: {item.price}</Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={() => handleEditProduct(item)}>
           <Text style={styles.buttonText}>Edit</Text>
@@ -150,7 +150,7 @@ const ManageProducts = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Manage Products</Text>
+      <Text style={styles.title}>Manage Events</Text>
 
       {loading ? (
         <Text style={styles.loadingText}>Loading...</Text>
@@ -172,16 +172,16 @@ const ManageProducts = () => {
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Edit Product</Text>
+            <Text style={styles.modalTitle}>Edit Event</Text>
             <TextInput
               style={styles.input}
-              placeholder="Product Name"
+              placeholder="Event Name"
               value={currentProduct.name}
               onChangeText={(text) => setCurrentProduct({ ...currentProduct, name: text })}
             />
             <TextInput
               style={styles.input}
-              placeholder="Price"
+              placeholder="Date"
               value={currentProduct.price.toString()}
               keyboardType="numeric"
               onChangeText={(text) => setCurrentProduct({ ...currentProduct, price: parseFloat(text) })}
@@ -194,7 +194,7 @@ const ManageProducts = () => {
             />
             <TextInput
               style={styles.input}
-              placeholder="Restaurant Name"
+              placeholder="Category"
               value={currentProduct.restaurantName}
               onChangeText={(text) => setCurrentProduct({ ...currentProduct, restaurantName: text })}
             />
@@ -222,13 +222,13 @@ const ManageProducts = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f4f4', // White background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',// White background
     padding: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#4CAF50', // Green color
+    color: '#ffff', // Green color
     marginBottom: 15,
     textAlign: 'center',
   },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 10,
     marginBottom: 10,
-    borderColor: '#4CAF50', // Green border
+    borderColor: '#008CBA', // Green border
     borderWidth: 2,
   },
   productName: {
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   productPrice: {
-    color: '#4CAF50', // Green price
+    color: '#008CBA', // Green price
     fontSize: 16,
     marginBottom: 10,
   },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   button: {
-    backgroundColor: '#4CAF50', // Green button
+    backgroundColor: '#008CBA', // Green button
     padding: 10,
     borderRadius: 8,
     marginHorizontal: 5,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   loadingText: {
-    color: '#4CAF50', // Green loading text
+    color: '#0056D2', // Green loading text
     fontSize: 20,
     textAlign: 'center',
     marginTop: 50,
@@ -299,14 +299,14 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff', // White background for modal
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // White background for modal
     padding: 20,
     justifyContent: 'center',
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4CAF50', // Green title
+    color: '#ffff', // Green title
     marginBottom: 15,
     textAlign: 'center',
   },

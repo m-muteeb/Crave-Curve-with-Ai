@@ -9,9 +9,9 @@ const ExploreMoreScreen = () => {
 
   // Sample data for the carousel (images and titles)
   const carouselItems = [
-    { id: '1', title: 'Crave Curve', image: 'https://img.freepik.com/premium-photo/burger-with-flame-background-words-burger-it_824239-1.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
-    { id: '2', title: 'Best Deals For You', image: 'https://img.freepik.com/premium-photo/chocolate-cake-with-with-berries_127425-304.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
-    { id: '3', title: 'Discover New Collections', image: 'https://img.freepik.com/free-photo/delicious-fries-studio_23-2151846534.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
+    { id: '1', title: 'Eventify', image: 'https://img.freepik.com/premium-photo/crowd-people-night-pool-party-ai-art_154797-1807.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
+    { id: '2', title: 'Book Your Events', image: 'https://img.freepik.com/free-psd/new-year-celebration-post-social-media-template_505751-4866.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
+    { id: '3', title: 'Dont Miss Any Cherish Event', image: 'https://img.freepik.com/free-vector/background-christmas-party_1048-162.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
   ];
 
   // Render carousel item
@@ -21,7 +21,7 @@ const ExploreMoreScreen = () => {
       {/* Conditional styling for the first item */}
       {item.id === '1' ? (
         <View style={styles.textOverlay}>
-          <Text style={styles.elegantText}>Crave Curve</Text>
+          <Text style={styles.elegantText}>Eventify</Text>
         </View>
       ) : (
         <View style={styles.textOverlay}>
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     fontSize: 50,
     fontWeight: 'bold',
     fontStyle: 'italic',
-    color: '#FFD700', // Gold color for elegance
+    color: '#008CBA', // Gold color for elegance
     textAlign: 'center',
     textShadowColor: '#000', // Subtle shadow for depth
     textShadowOffset: { width: 2, height: 2 },
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   carouselTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff', // White text
+    color: '#008CBA', // White text
     textAlign: 'center',
   },
   buttonContainer: {
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#008CBA',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,

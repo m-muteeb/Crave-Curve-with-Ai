@@ -34,29 +34,49 @@ const Cart = ({ navigation }) => {
     return () => unsubscribe(); // Cleanup listener
   }, [userId]);
 
-  // Function to remove item permanently from Firestore
-  const handleRemoveItem = async (itemId) => {
+ // Function to remove item permanently from Firestore
+const handleRemoveItem = async (itemId) => {
+  try {
+    const itemRef = firestore().collection('cart').doc(itemId);
+
+    // Delete the item from Firestore
+    await itemRef.delete();
+
+    // Check if it is deleted successfully from Firestore
+    const snapshot = await itemRef.get();
+    if (!snapshot.exists) {
+      setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+      Alert.alert('Removed', 'Item removed from cart.');
+    } else {
+      Alert.alert('Error', 'Item could not be removed.');
+    }
+  } catch (error) {
+    console.error('Error removing item:', error.message);
+    Alert.alert('Error', 'Failed to remove item.');
+  }
+};
+
+// Ensure the cart items are fetched once on component mount
+useEffect(() => {
+  const fetchCartItems = async () => {
     try {
-      const itemRef = firestore().collection('cart').doc(itemId);
-  
-      // Delete the item from Firestore
-      await itemRef.delete();
-  
-      // Check if it is deleted successfully from Firestore
-      const snapshot = await itemRef.get();
-      if (!snapshot.exists) {
-        setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-        Alert.alert('Removed', 'Item removed from cart.');
-      } else {
-        Alert.alert('Error', 'Item could not be removed.');
-      }
+      const querySnapshot = await firestore()
+        .collection('cart')
+        .where('userId', '==', userId)
+        .get();
+
+      const items = [];
+      querySnapshot.forEach((doc) => {
+        items.push({ id: doc.id, ...doc.data() });
+      });
+      setCartItems(items); // Update state with current cart items
     } catch (error) {
-      console.error('Error removing item:', error.message);
-      Alert.alert('Error', 'Failed to remove item.');
+      console.error('Error fetching cart items:', error);
     }
   };
-  
 
+  fetchCartItems();
+}, [userId]);
   // Function to place an order for all items in the cart
   const handlePlaceAllOrder = async () => {
     if (!orderDetails.address || !orderDetails.paymentMethod) {
@@ -103,7 +123,9 @@ const Cart = ({ navigation }) => {
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
       <View style={styles.details}>
         <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.price}>${item.price}</Text>
+        <Text style={styles.orderItemDate}>
+          Date: {item.orderDate?.toDate().toLocaleDateString() || 'N/A'}
+        </Text>
         <TouchableOpacity
           style={styles.removeButton}
           onPress={() => handleRemoveItem(item.id)}
@@ -117,7 +139,7 @@ const Cart = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {cartItems.length === 0 ? (
-        <Text style={styles.emptyText}>Your cart is empty.</Text>
+        <Text style={styles.emptyText}>Your Event List is empty.</Text>
       ) : (
         <>
           <FlatList
@@ -129,7 +151,7 @@ const Cart = ({ navigation }) => {
             style={styles.orderButton}
             onPress={() => setPlaceAllOrderModalVisible(true)} // Show the modal to take order details
           >
-            <Text style={styles.orderButtonText}>Order All</Text>
+            <Text style={styles.orderButtonText}>Book All</Text>
           </TouchableOpacity>
         </>
       )}
@@ -143,7 +165,7 @@ const Cart = ({ navigation }) => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Order Details</Text>
+            <Text style={styles.modalTitle}>Booking Details</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter Address"
@@ -162,7 +184,7 @@ const Cart = ({ navigation }) => {
               style={styles.placeOrderButton}
               onPress={handlePlaceAllOrder}
             >
-              <Text style={styles.placeOrderButtonText}>Place Order</Text>
+              <Text style={styles.placeOrderButtonText}>Book Now</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.closeModalButton}
@@ -189,14 +211,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 10,
-    borderColor: '#4CAF50',
+    borderColor: '#008CBA',
     borderWidth: 1,
   },
   image: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    borderColor: '#4CAF50',
+    borderColor: '#008CBA',
     borderWidth: 1,
   },
   details: {
@@ -207,7 +229,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#008CBA',
   },
   price: {
     fontSize: 14,
@@ -226,12 +248,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#4CAF50',
+    color: '#008CBA',
     textAlign: 'center',
     marginTop: 20,
   },
   orderButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#008CBA',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -256,7 +278,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    color: '#4CAF50',
+    color: '#008CBA',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -268,7 +290,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   placeOrderButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#008CBA',
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -283,7 +305,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeModalText: {
-    color: '#4CAF50',
+    color: '#008CBA',
     fontSize: 16,
   },
 });

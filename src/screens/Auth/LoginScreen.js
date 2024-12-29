@@ -20,7 +20,7 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://192.168.100.16:5000/api/login', {
+      const response = await axios.post('http://172.16.50.211:5000/api/login', {
         email,
         password,
       });
@@ -36,7 +36,7 @@ const LoginScreen = ({ navigation }) => {
 
       // Store the token
       await AsyncStorage.setItem('authToken', token);
-//  git remote add new origin https://github.com/miangmuteeb/New-Crave-Curve.git
+
       // Navigate based on role
       if (role === 'manager') {
         navigation.navigate('SellerDashboardScreen');
@@ -81,11 +81,11 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png' }} // Logo URL
+        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/869/869636.png' }} // Updated to an event-related icon
         style={styles.logo}
       />
       <ScrollView>
-        <Text style={styles.restaurantName}>Crave Curve</Text>
+        <Text style={styles.eventName}>Eventify</Text>
 
         <Formik
           initialValues={{ email: '', password: '' }}
@@ -118,7 +118,7 @@ const LoginScreen = ({ navigation }) => {
               {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
               {loading ? (
-                <ActivityIndicator size="large" color="#000" />
+                <ActivityIndicator size="large" color="#008CBA" />
               ) : (
                 <TouchableOpacity style={styles.button} onPress={handleSubmit}>
                   <Text style={styles.buttonText}>Login</Text>
@@ -154,16 +154,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 20,
   },
-  restaurantName: {
+  eventName: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#008CBA', // Event-related theme color
     textAlign: 'center',
     marginBottom: 20,
   },
   input: {
     height: 50,
-    borderColor: '#4CAF50',
+    borderColor: '#008CBA',
     borderWidth: 1,
     borderRadius: 10,
     marginBottom: 15,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#008CBA',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -190,13 +190,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   forgotPasswordText: {
-    color: '#4CAF50',
+    color: '#008CBA',
     textAlign: 'center',
     marginTop: 15,
     fontSize: 16,
   },
   registerText: {
-    color: '#4CAF50',
+    color: '#008CBA',
     textAlign: 'center',
     marginTop: 15,
     fontSize: 16,
