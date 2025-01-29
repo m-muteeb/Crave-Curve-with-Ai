@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, FlatList, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -6,28 +6,44 @@ const { width, height } = Dimensions.get('window'); // Get screen width and heig
 
 const ExploreMoreScreen = () => {
   const navigation = useNavigation();
+  const flatListRef = useRef(null);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
   // Sample data for the carousel (images and titles)
   const carouselItems = [
-    { id: '1', title: 'Eventify', image: 'https://img.freepik.com/premium-photo/crowd-people-night-pool-party-ai-art_154797-1807.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
-    { id: '2', title: 'Book Your Events', image: 'https://img.freepik.com/free-psd/new-year-celebration-post-social-media-template_505751-4866.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
-    { id: '3', title: 'Dont Miss Any Cherish Event', image: 'https://img.freepik.com/free-vector/background-christmas-party_1048-162.jpg?ga=GA1.1.1642102062.1730407199&semt=ais_hybrid' },
+    { id: '1', title: 'Crave Curve', image: 'https://img.freepik.com/free-photo/fried-chicken-breast-with-vegetables_140725-4649.jpg?ga=GA1.1.609266300.1736801953&semt=ais_hybrid' },
+    { id: '2', title: 'Create Your Own Recepie with Ai', image: 'https://img.freepik.com/premium-photo/delicious-rice-meat-salad-plate-with-restaurant-blurred-background_7023-1342.jpg?ga=GA1.1.609266300.1736801953&semt=ais_hybrid' },
+    { id: '3', title: 'Order anything to vanish your hunger', image: 'https://img.freepik.com/premium-photo/stuffed-peppers-with-rice-beans-pumpkin-mexican-style_2829-4944.jpg?ga=GA1.1.609266300.1736801953&semt=ais_hybrid' },
   ];
+
+  // Automatically move the carousel every 1 second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = prevIndex + 1;
+        if (nextIndex >= carouselItems.length) {
+          return 0;
+        }
+        return nextIndex;
+      });
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index: currentIndex, animated: true });
+    }
+  }, [currentIndex]);
 
   // Render carousel item
   const renderItem = ({ item }) => (
     <View style={styles.carouselItem}>
       <Image source={{ uri: item.image }} style={styles.carouselImage} />
-      {/* Conditional styling for the first item */}
-      {item.id === '1' ? (
-        <View style={styles.textOverlay}>
-          <Text style={styles.elegantText}>Eventify</Text>
-        </View>
-      ) : (
-        <View style={styles.textOverlay}>
-          <Text style={styles.carouselTitle}>{item.title}</Text>
-        </View>
-      )}
+      <View style={styles.textOverlay}>
+        <Text style={item.id === '1' ? styles.elegantText : styles.carouselTitle}>{item.title}</Text>
+      </View>
     </View>
   );
 
@@ -40,6 +56,7 @@ const ExploreMoreScreen = () => {
     <View style={styles.container}>
       {/* Fullscreen Carousel */}
       <FlatList
+        ref={flatListRef}
         data={carouselItems}
         renderItem={renderItem}
         horizontal
@@ -61,7 +78,7 @@ const ExploreMoreScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111', // Black background
+    backgroundColor: '#000', // Black background
   },
   carouselItem: {
     width: width, // Fullscreen width
@@ -79,7 +96,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     transform: [{ translateY: -30 }], // Offset for perfect centering
-    backgroundColor: 'rgba(7, 7, 7, 0.8)', // Semi-transparent black overlay
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Semi-transparent black overlay
     paddingVertical: 20,
     paddingHorizontal: 30,
     alignItems: 'center',
@@ -88,7 +105,7 @@ const styles = StyleSheet.create({
     fontSize: 50,
     fontWeight: 'bold',
     fontStyle: 'italic',
-    color: '#008CBA', // Gold color for elegance
+    color: '#fff', // White color for elegance
     textAlign: 'center',
     textShadowColor: '#000', // Subtle shadow for depth
     textShadowOffset: { width: 2, height: 2 },
@@ -98,7 +115,7 @@ const styles = StyleSheet.create({
   carouselTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#008CBA', // White text
+    color: '#fff', // White text
     textAlign: 'center',
   },
   buttonContainer: {
@@ -109,23 +126,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: '#008CBA',
+    backgroundColor: '#000', // White background
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
-    elevation: 78, // Shadow for Android
+    elevation: 5, // Shadow for Android
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 56 },
-    shadowOpacity: 0.9,
-    shadowRadius: 55,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
   },
   buttonText: {
-    color: '#000',
+    color: '#fff', // Black text
     fontSize: 18,
     fontWeight: 'bold',
   },
 });
 
 export default ExploreMoreScreen;
-
-

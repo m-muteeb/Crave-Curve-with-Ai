@@ -1,40 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Modal, Alert, Dimensions } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import axios from 'axios';
 
 const BuyerOrder = () => {
   const [orders, setOrders] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const user = auth().currentUser;
-        const ordersSnapshot = await firestore()
-          .collection('orders')
-          .where('userId', '==', user.uid)
-          .get();
-
-        const ordersList = ordersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setOrders(ordersList);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
+        const response = await axios.get('http://192.168.100.16:5000/api/orders'); // Fetch all orders
+        setOrders(response.data);
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || 'Error fetching orders';
+        setError(errorMessage);
+        Alert.alert('Error', errorMessage);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchOrders();
+    fetchOrders(); // Fetch orders when the component mounts
   }, []);
 
   const handleRemoveOrder = async (orderId) => {
     try {
-      await firestore().collection('orders').doc(orderId).delete();
-      setOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId));
+      await axios.delete(`http://192.168.100.16:5000/api/orders/${orderId}`);
+      setOrders((prevOrders) => prevOrders.filter((order) => order._id !== orderId));
       Alert.alert('Success', 'Order removed successfully');
     } catch (error) {
       console.error('Error removing order:', error);
@@ -47,27 +40,43 @@ const BuyerOrder = () => {
       <Image source={{ uri: item.productImage }} style={styles.orderItemImage} />
       <View style={styles.orderItemDetails}>
         <Text style={styles.orderItemName}>{item.productName}</Text>
-       
-
+        <Text style={styles.orderItemPrice}>${item.productPrice}</Text>
         <Text style={styles.orderItemDate}>
-          Date: {item.orderDate?.toDate().toLocaleDateString() || 'N/A'}
+          Date: {new Date(item.orderDate).toLocaleDateString()}
         </Text>
-        <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveOrder(item.id)}>
-          <Text style={styles.buttonText}>Remove</Text>
-        </TouchableOpacity>
+       
+       
       </View>
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading orders...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {orders.length === 0 ? (
-        <Text style={styles.noOrdersText}>You haven't Booked any Event yet!</Text>
+        <Text style={styles.noOrdersText}>You haven't placed any orders yet!</Text>
       ) : (
         <FlatList
           data={orders}
           renderItem={renderOrderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.orderList}
         />
       )}
     </View>
@@ -77,12 +86,34 @@ const BuyerOrder = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#e6ffe6',
+    backgroundColor: '#fff',
     padding: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    marginTop: 10,
+    fontSize: 18,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#ff6347',
+    fontSize: 18,
+  },
+  orderList: {
+    paddingBottom: 20,
   },
   orderItem: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 10,
     padding: 10,
     marginBottom: 20,
@@ -90,7 +121,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    borderColor: '#32CD32',
+    borderColor: '#ffffff',
     borderWidth: 1,
   },
   orderItemImage: {
@@ -106,19 +137,19 @@ const styles = StyleSheet.create({
   orderItemName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#006400',
+    color: '#ffffff',
   },
   orderItemPrice: {
     fontSize: 16,
-    color: '#006400',
-  },
-  orderItemQuantity: {
-    fontSize: 14,
-    color: '#006400',
+    color: '#ffffff',
   },
   orderItemDate: {
     fontSize: 14,
-    color: '#006400',
+    color: '#ffffff',
+  },
+  orderItemStatus: {
+    fontSize: 14,
+    color: '#ffffff',
   },
   removeButton: {
     backgroundColor: '#FF6347',
@@ -134,7 +165,7 @@ const styles = StyleSheet.create({
   },
   noOrdersText: {
     fontSize: 18,
-    color: '#006400',
+    color: '#ffffff',
     textAlign: 'center',
     marginTop: 50,
   },

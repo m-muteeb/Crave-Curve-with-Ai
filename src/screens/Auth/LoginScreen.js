@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Image, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+} from 'react-native';
 import axios from 'axios';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Validation Schema for Formik
   const validationSchema = Yup.object().shape({
@@ -14,89 +23,65 @@ const LoginScreen = ({ navigation }) => {
     password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
   });
 
-  // Handle Login
+  // Handle User Login with MongoDB
   const handleLogin = async (values) => {
     const { email, password } = values;
     setLoading(true);
-
+    setErrorMessage('');
     try {
-      const response = await axios.post('http://172.16.50.211:5000/api/login', {
+      const response = await axios.post('http://192.168.100.16:5000/api/login', {
         email,
         password,
       });
 
-      // Log the response to see its structure
-      console.log('Response:', response.data);
+      console.log('Login response:', response.data); // Log the entire response
+      const { role } = response.data.user; // Get the role from the user object in the response
 
-      // Correctly destructure the response
-      const { token, user } = response.data;
-
-      // Get role from user object
-      const { role } = user;
-
-      // Store the token
-      await AsyncStorage.setItem('authToken', token);
-
-      // Navigate based on role
-      if (role === 'manager') {
-        navigation.navigate('SellerDashboardScreen');
-        Alert.alert('Login Successful', 'Welcome Manager!');
-      } else if (role === 'customer') {
-        navigation.navigate('BuyerDashboard');
-        Alert.alert('Login Successful', 'Welcome Customer!');
+      if (role === 'customer') {
+        console.log('Navigating to AllProducts');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'AllProducts' }],
+        }); // Navigate to AllProducts screen for customers
+      } else if (role === 'manager') {
+        console.log('Navigating to SellerDashboardScreen');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'SellerDashboardScreen' }],
+        }); // Navigate to SellerDashboardScreen for managers
       } else {
-        Alert.alert('Error', 'User role not recognized.');
+        console.log('Unknown role:', role);
       }
     } catch (error) {
-      // Detailed error handling
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        'Login failed. Please try again.';
-
-      console.error('Login error:', errorMessage);
-      Alert.alert('Login Failed', errorMessage);
+      console.error('Error during login:', error.response || error.message);
+      setErrorMessage(
+        error.response?.data?.message || 'Login failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle Forgot Password
-  const handleForgotPassword = (email) => {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email address.');
-      return;
-    }
-    axios
-      .post('http://yourserverurl:5000/forgot-password', { email })
-      .then(() => {
-        Alert.alert('Password Reset', 'Password reset email sent successfully.');
-      })
-      .catch((error) => {
-        Alert.alert('Error', error.message);
-      });
-  };
-
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/869/869636.png' }} // Updated to an event-related icon
-        style={styles.logo}
-      />
-      <ScrollView>
-        <Text style={styles.eventName}>Eventify</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Image
+          source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png' }} // Burger icon
+          style={styles.logo}
+        />
+        <Text style={styles.appName}>Crave Curve</Text>
 
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={validationSchema}
-          onSubmit={handleLogin}
+          onSubmit={(values) => handleLogin(values)}
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <>
+              {/* Email Input */}
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Enter your email"
                 placeholderTextColor="#aaa"
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -106,9 +91,10 @@ const LoginScreen = ({ navigation }) => {
               />
               {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
+              {/* Password Input */}
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Enter your password"
                 placeholderTextColor="#aaa"
                 secureTextEntry
                 onChangeText={handleChange('password')}
@@ -117,19 +103,22 @@ const LoginScreen = ({ navigation }) => {
               />
               {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
+              {/* Login Button */}
               {loading ? (
-                <ActivityIndicator size="large" color="#008CBA" />
+                <ActivityIndicator size="large" color="#000" />
               ) : (
-                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleSubmit}
+                >
                   <Text style={styles.buttonText}>Login</Text>
                 </TouchableOpacity>
               )}
 
-              {/* Forgot Password */}
-              <TouchableOpacity onPress={() => handleForgotPassword(values.email)}>
-                <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
-              </TouchableOpacity>
+              {/* Error Message */}
+              {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
+              {/* Navigate to Register */}
               <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
                 <Text style={styles.registerText}>Don't have an account? Register here</Text>
               </TouchableOpacity>
@@ -144,62 +133,56 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 50,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingVertical: 20,
   },
   logo: {
     width: 100,
     height: 100,
-    alignSelf: 'center',
     marginBottom: 20,
   },
-  eventName: {
-    fontSize: 36,
+  appName: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#008CBA', // Event-related theme color
-    textAlign: 'center',
-    marginBottom: 20,
+    color: '#000',
+    marginBottom: 30,
   },
   input: {
+    width: '90%',
     height: 50,
-    borderColor: '#008CBA',
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 15,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
     paddingHorizontal: 15,
-    backgroundColor: '#f1f1f1',
-    color: '#333',
+    marginBottom: 15,
     fontSize: 16,
+    color: '#333',
   },
   errorText: {
     color: 'red',
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 10,
   },
   button: {
-    backgroundColor: '#008CBA',
-    paddingVertical: 14,
-    borderRadius: 10,
+    width: '90%',
+    height: 50,
+    backgroundColor: '#000',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    borderRadius: 8,
+    marginBottom: 15,
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  forgotPasswordText: {
-    color: '#008CBA',
-    textAlign: 'center',
-    marginTop: 15,
-    fontSize: 16,
-  },
   registerText: {
-    color: '#008CBA',
-    textAlign: 'center',
-    marginTop: 15,
     fontSize: 16,
+    color: '#000',
+    marginTop: 10,
   },
 });
 

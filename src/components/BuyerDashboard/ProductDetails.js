@@ -11,8 +11,8 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
 
 const ProductDetails = ({ route }) => {
   const { product } = route.params;
@@ -25,43 +25,29 @@ const ProductDetails = ({ route }) => {
   });
   const [comments, setComments] = useState([]);
   const [comment, setComment] = useState('');
+  const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        const productDoc = await firestore()
-          .collection('products')
-          .doc(product.id)
-          .get();
-        if (productDoc.exists) {
-          const fetchedComments = productDoc.data().comments || [];
-          console.log('Fetched comments:', fetchedComments); // Debugging line
-
-          // Ensure the comments are in an array of objects with {user, id, text}
-          if (Array.isArray(fetchedComments)) {
-            setComments(fetchedComments);
-          } else {
-            setComments([]); // If the comments data is not an array, set to an empty array.
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching comments:', error);
-      }
-    };
-
     fetchComments();
-  }, [product.id]);
+  }, [product._id]);
+
+  const fetchComments = async () => {
+    try {
+      const response = await axios.get(`http://192.168.100.16:5000/api/products/${product._id}/comments`);
+      setComments(response.data);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
+  };
 
   const handleAddToCart = async () => {
     try {
-      const user = auth().currentUser;
-      await firestore().collection('cart').add({
-        userId: user.uid,
-        productId: product.id,
-        ...product,
+      await axios.post('http://192.168.100.16:5000/api/cart', {
+        productId: product._id, // Use the _id field from the product schema
+        quantity: 1, // Default quantity
       });
       setCartAdded(true);
-      Alert.alert('Success', 'Event Added to Event List');
+      Alert.alert('Success', 'Product added to cart');
     } catch (error) {
       console.error('Error adding to cart:', error);
       Alert.alert('Error', 'Failed to add product to cart');
@@ -71,70 +57,24 @@ const ProductDetails = ({ route }) => {
   const handleOrderProduct = async () => {
     const { name, address, phone } = userDetails;
 
-    // Validate input fields
     if (!name || !address || !phone) {
       Alert.alert('Error', 'Please fill out all fields.');
       return;
     }
 
     try {
-      const user = auth().currentUser;
-
-      // Fetch the product document from Firestore
-      const productDoc = await firestore()
-        .collection('products')
-        .doc(product.id)
-        .get();
-
-      // Check if the product exists
-      if (!productDoc.exists) {
-        Alert.alert('Error', 'Product not found.');
-        return;
-      }
-
-      // Fetch sellerId from the product document
-      const sellerId = productDoc.data().sellerId;
-
-      // Check if sellerId exists
-      if (!sellerId) {
-        Alert.alert('Error', 'Seller not found.');
-        return;
-       }
-
-      // Create the order document for the buyer
-      const orderRef = await firestore().collection('orders').add({
-        userId: user.uid,
-        sellerId: sellerId,
-        productId: product.id,
-        productName: product.name,
+      await axios.post('http://192.168.100.16:5000/api/orders', {
+        productId: product._id,
+        productName: product.productName,
         productPrice: product.price,
         userDetails,
         orderDate: new Date(),
         productImage: product.imageUrl,
-        status: 'Pending',  // Set initial status of the order
+        status: 'Pending',
       });
 
-      // Add the order to the seller's orders subcollection
-      await firestore()
-        .collection('sellers')
-        .doc(sellerId)
-        .collection('orders')
-        .add({
-          orderId: orderRef.id,  // Reference to the created order
-          productName: product.name,
-          userName: user.displayName,
-          userId: user.uid,
-          orderDate: new Date(),
-          orderStatus: 'Pending',  // You can update the status later
-          productPrice: product.price,
-          productImage: product.imageUrl,
-        });
-
-      // Close the order modal
       setOrderModalVisible(false);
-
-      // Alert user that the order has been placed successfully
-      Alert.alert('Success', 'Your Event has been Booked successfully!');
+      Alert.alert('Success', 'Your order has been placed successfully!');
     } catch (error) {
       console.error('Error placing order:', error);
       Alert.alert('Error', 'Failed to place the order.');
@@ -155,16 +95,11 @@ const ProductDetails = ({ route }) => {
     }
 
     try {
-      const productDoc = await firestore()
-        .collection('products')
-        .doc(product.id);
-      const newComments = [...comments, { text: comment, user: auth().currentUser.uid, id: Date.now().toString() }];
+      const newComment = { productId: product._id, text: comment };
 
-      await productDoc.update({
-        comments: newComments,
-      });
+      await axios.post(`http://192.168.100.16:5000/api/products/${product._id}/comments`, newComment);
 
-      setComments(newComments);
+      setComments([...comments, newComment]);
       setComment('');
       Alert.alert('Success', 'Comment added');
     } catch (error) {
@@ -176,7 +111,7 @@ const ProductDetails = ({ route }) => {
   return (
     <ScrollView style={styles.container}>
       <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
-      <Text style={styles.productName}>{product.name}</Text>
+      <Text style={styles.productName}>{product.productName}</Text>
       <Text style={styles.productPrice}>${product.price}</Text>
       <Text style={styles.productDescription}>{product.description}</Text>
 
@@ -187,7 +122,7 @@ const ProductDetails = ({ route }) => {
           disabled={cartAdded}
         >
           <Text style={styles.buttonText}>
-            {cartAdded ? 'Added to Event List' : 'Add to Event List'}
+            {cartAdded ? 'Added to Cart' : 'Add to Cart'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -197,7 +132,7 @@ const ProductDetails = ({ route }) => {
           style={[styles.button, styles.orderButton]}
           onPress={() => setOrderModalVisible(true)}
         >
-          <Text style={styles.buttonText}>Book Now</Text>
+          <Text style={styles.buttonText}>Order Now</Text>
         </TouchableOpacity>
       </View>
 
@@ -207,7 +142,7 @@ const ProductDetails = ({ route }) => {
         {comments.length > 0 ? (
           <FlatList
             data={comments}
-            keyExtractor={(item) => item.id} // Ensure each comment has a unique 'id'
+            keyExtractor={(item) => item._id} // Ensure each comment has a unique '_id'
             renderItem={({ item }) => (
               <View style={styles.commentContainer}>
                 <Text style={styles.commentText}>{item.text}</Text>
@@ -262,16 +197,16 @@ const ProductDetails = ({ route }) => {
               onChangeText={(value) => handleInputChange('phone', value)}
             />
             <TouchableOpacity
-              style={[styles.button, styles.orderButton]}
+              style={[styles.modalButton, styles.confirmButton]}
               onPress={handleOrderProduct}
             >
-              <Text style={styles.buttonText}>Confirm</Text>
+              <Text style={styles.modalButtonText}>Confirm</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+              style={[styles.modalButton, styles.cancelButton]}
               onPress={() => setOrderModalVisible(false)}
             >
-              <Text style={styles.buttonText}>Cancel</Text>
+              <Text style={styles.modalButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -283,117 +218,119 @@ const ProductDetails = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
+    padding: 10,
   },
   productImage: {
     width: '100%',
-    height: 250,
-    borderRadius: 10,
-    marginBottom: 20,
+    height: 200,
+    resizeMode: 'contain',
   },
   productName: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#008CBA',
-    marginBottom: 10,
+    marginTop: 10,
   },
   productPrice: {
-    fontSize: 24,
-    color: '#008CBA',
-    marginBottom: 10,
+    fontSize: 18,
+    color: 'green',
+    marginTop: 5,
   },
   productDescription: {
-    fontSize: 18,
-    color: '#333',
-    marginBottom: 20,
+    fontSize: 16,
+    marginTop: 10,
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    marginTop: 20,
   },
   button: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    flex: 1,
+    padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    marginHorizontal: 5,
-    minHeight: 50,
+    borderRadius: 5,
   },
   cartButton: {
-    backgroundColor: '#008CBA',
+    backgroundColor: 'black',
   },
   orderButton: {
-    backgroundColor: '#008CBA',
-  },
-  cancelButton: {
-    backgroundColor: '#d32f2f',
-    marginTop: 10,
+    backgroundColor: 'black',
+    marginLeft: 10,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: 'white',
+    fontSize: 16,
   },
   commentsSection: {
-    marginTop: 20,
+    marginTop: 30,
   },
   commentsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
   },
   commentContainer: {
-    backgroundColor: '#f1f1f1',
+    marginTop: 10,
     padding: 10,
-    marginBottom: 10,
+    backgroundColor: '#f9f9f9',
     borderRadius: 5,
   },
   commentText: {
     fontSize: 16,
-    color: '#333',
   },
   noCommentsText: {
     fontSize: 16,
     color: '#888',
-    textAlign: 'center',
+  },
+  input: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginTop: 10,
+    paddingLeft: 10,
+    borderRadius: 5,
   },
   addCommentButton: {
-    backgroundColor: '#008CBA',
     marginTop: 10,
+    backgroundColor: 'black',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    
   },
   modalContent: {
-    backgroundColor: '#fff',
-    padding: 50,  // Increased padding to allow more space inside the modal
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
     borderRadius: 10,
-    width: '80%',
-    maxHeight: '110%', // Adjust this to prevent the content from overflowing
   },
-  
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 15,
   },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
+  modalButton: {
+    backgroundColor: 'black',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
-    marginBottom: 10,
-    paddingLeft: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  confirmButton: {
+    backgroundColor: 'black',
+  },
+  cancelButton: {
+    backgroundColor: 'gray',
+    marginTop: 10,
   },
 });
 
 export default ProductDetails;
+

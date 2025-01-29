@@ -34,7 +34,7 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(true);
     setErrorMessage('');
     try {
-      const response = await axios.post('http://172.16.50.211:5000/api/register', {
+      const response = await axios.post('http://192.168.100.16:5000/api/register', {
         email,
         password,
         role,
@@ -59,10 +59,10 @@ const RegisterScreen = ({ navigation }) => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Image
-          source={{ uri: 'https://cdn-icons-png.flaticon.com/512/869/869636.png' }} // New event logo
+          source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png' }} // Burger icon
           style={styles.logo}
         />
-        <Text style={styles.appName}>Eventify</Text>
+        <Text style={styles.appName}>Crave Curve</Text>
 
         <Formik
           initialValues={{ email: '', password: '', confirmPassword: '' }}
@@ -113,7 +113,7 @@ const RegisterScreen = ({ navigation }) => {
               {/* Role Selection */}
               <Text style={styles.label}>Register as:</Text>
               <View style={styles.roleContainer}>
-                {['Attendee', 'Organizer'].map((option) => (
+                {['customer', 'manager'].map((option) => (
                   <TouchableOpacity
                     key={option}
                     style={[
@@ -137,7 +137,7 @@ const RegisterScreen = ({ navigation }) => {
 
               {/* Register Button */}
               {loading ? (
-                <ActivityIndicator size="large" color="#008CBA" />
+                <ActivityIndicator size="large" color="#000" />
               ) : (
                 <TouchableOpacity
                   style={styles.button}
@@ -161,7 +161,7 @@ const RegisterScreen = ({ navigation }) => {
         {/* Success Message */}
         {registrationSuccess && (
           <View style={styles.successMessage}>
-            <Text style={styles.successText}>Welcome to Eventify, {role}!</Text>
+            <Text style={styles.successText}>Welcome to Crave Curve, {role}!</Text>
           </View>
         )}
       </ScrollView>
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#008CBA',
+    color: '#000',
     marginBottom: 30,
   },
   input: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   selectedRadioButton: {
-    backgroundColor: '#008CBA',
+    backgroundColor: '#000',
   },
   radioText: {
     fontSize: 16,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   button: {
     width: '90%',
     height: 50,
-    backgroundColor: '#008CBA',
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
@@ -249,11 +249,11 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
-    color: '#008CBA',
+    color: '#000',
     marginTop: 10,
   },
   successMessage: {
-    backgroundColor: '#008CBA',
+    backgroundColor: '#000',
     padding: 10,
     borderRadius: 5,
     marginTop: 20,

@@ -10,6 +10,13 @@ connectDB();
 const app = express();
 app.use(express.json());
 
+
+console.log("Cloudinary Config:", {
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 // CORS configuration to allow the frontend from multiple origins
 app.use(cors({
     origin: [
@@ -32,4 +39,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-// 

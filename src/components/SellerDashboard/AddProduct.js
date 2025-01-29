@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, Alert, ActivityIndicator, ImageBackground } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import auth from '@react-native-firebase/auth';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
+import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 const AddProduct = ({ navigation }) => {
@@ -14,6 +12,7 @@ const AddProduct = ({ navigation }) => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Handle image upload
   const handleImageUpload = () => {
     launchImageLibrary({ mediaType: 'photo', includeBase64: false }, (response) => {
       if (response.didCancel || response.errorCode) return;
@@ -21,120 +20,123 @@ const AddProduct = ({ navigation }) => {
     });
   };
 
-  const uploadImageToStorage = async (uri) => {
-    const filename = `products/${Date.now()}_${Math.random()}.jpg`;
-    const reference = storage().ref(filename);
-
-    try {
-      await reference.putFile(uri);
-      return await reference.getDownloadURL();
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
+  // Input validation
+  const validateInputs = () => {
+    if (!productName || !price || !description || !category || !restaurantName || !image) {
+      return 'All fields and image are required.';
     }
+    if (isNaN(price) || price <= 0) {
+      return 'Price must be a positive number.';
+    }
+    return null;
   };
 
+  // Handle adding product
   const handleAddProduct = async () => {
-    if (!productName || !price || !description || !restaurantName || !image) {
-      Alert.alert('Error', 'All fields are required.');
+    const errorMessage = validateInputs();
+    if (errorMessage) {
+      Alert.alert('Error', errorMessage);
       return;
     }
 
-    const currentUser = auth().currentUser;
-    if (!currentUser) {
-      Alert.alert('Error', 'You must be logged in to add a product.');
-      return;
-    }
+    setLoading(true);
 
-    setLoading(true); // Start loading
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('productName', productName);
+    formData.append('price', price);
+    formData.append('description', description);
+    formData.append('category', category);
+    formData.append('restaurantName', restaurantName);
+    formData.append('image', {
+      uri: image,
+      type: 'image/jpeg',
+      name: 'product.jpg',
+    });
 
     try {
-      // Upload image to Firebase Storage and get the URL
-      const imageUrl = await uploadImageToStorage(image);
+      const response = await axios.post('http://192.168.100.16:5000/api/createProducts', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-      // Prepare product data
-      const productData = {
-        name: productName,
-        price: parseFloat(price),
-        description,
-        category,
-        restaurantName,
-        imageUrl,
-        sellerId: currentUser.uid,
-        createdAt: new Date(),
-      };
+      // Log response for debugging
+      console.log(response.data);
 
-      // Add product to Firestore
-      await firestore().collection('products').add(productData);
-
-      Alert.alert('Success', 'Product added successfully!');
-      setProductName('');
-      setPrice('');
-      setDescription('');
-      setCategory('');
-      setRestaurantName('');
-      setImage(null);
-      navigation.navigate('SellerDashboardScreen');
+      // Check for successful response (status 201 for created)
+      if (response.status === 201) {
+        Alert.alert('Success', 'Product added successfully');
+        navigation.goBack();
+      } else {
+        Alert.alert('Error', 'Unexpected server response. Please try again.');
+      }
     } catch (error) {
       console.error('Error adding product:', error);
-      Alert.alert('Error', 'Something went wrong! Please try again.');
+
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with a status other than 2xx
+        Alert.alert('Error', error.response.data.message || 'Failed to add product. Please try again.');
+      } else if (error.request) {
+        // No response from server
+        Alert.alert('Error', 'No response from server. Please check your network and try again.');
+      } else {
+        // Something went wrong while setting up the request
+        Alert.alert('Error', 'An error occurred. Please try again.');
+      }
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
   return (
-    <ImageBackground
-      source={{ uri: 'https://example.com/background-image.jpg' }} // Add your image URL here
-      style={styles.container}
-    >
-      <Text style={styles.title}>Add Event</Text>
-      <TextInput 
-        style={styles.input} 
-        placeholder="Event Name" 
-        onChangeText={setProductName} 
-        value={productName} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Event Date" 
-        keyboardType="numeric" 
-        onChangeText={setPrice} 
-        value={price} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Event Description" 
-        onChangeText={setDescription} 
-        value={description} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Event Category" 
-        onChangeText={setCategory} 
-        value={category} 
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Venue" 
-        onChangeText={setRestaurantName} 
-        value={restaurantName} 
-      />
-
-      {image && <Image source={{ uri: image }} style={styles.image} />}
-
-      <TouchableOpacity style={styles.button} onPress={handleImageUpload}>
-        <Text style={styles.buttonText}>Upload Image</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button} onPress={handleAddProduct} disabled={loading}>
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <TextInput
+          style={styles.input}
+          placeholder="Product Name"
+          value={productName}
+          onChangeText={setProductName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Price"
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Description"
+          value={description}
+          onChangeText={setDescription}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Category"
+          value={category}
+          onChangeText={setCategory}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Restaurant Name"
+          value={restaurantName}
+          onChangeText={setRestaurantName}
+        />
+        <TouchableOpacity style={styles.imageUploadButton} onPress={handleImageUpload}>
+          <Text style={styles.imageUploadButtonText}>Upload Image</Text>
+        </TouchableOpacity>
+        {image && <Image source={{ uri: image }} style={styles.image} />}
         {loading ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator size="large" color="#0000ff" />
         ) : (
-          <Text style={styles.buttonText}>Add Event</Text>
+          <TouchableOpacity style={styles.button} onPress={handleAddProduct}>
+            <Text style={styles.buttonText}>Add Product</Text>
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
-    </ImageBackground>
+      </View>
+    </View>
   );
 };
 
@@ -142,54 +144,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#f7f7f7',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Adding a semi-transparent overlay for better readability
   },
-  title: {
-    color: '#fff', // White color for the title to contrast with the background
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    letterSpacing: 2,
-  },
-  input: {
-    backgroundColor: '#f0f0f0', 
-    color: '#000',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginBottom: 15,
-    fontSize: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  button: {
-    backgroundColor: '#008CBA', 
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 12,
-    alignItems: 'center',
+  card: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  buttonText: {
-    color: '#fff', 
-    fontSize: 18,
-    fontWeight: 'bold',
+  input: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    backgroundColor: '#f9f9f9',
+  },
+  imageUploadButton: {
+    backgroundColor: '#000',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  imageUploadButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
   image: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
-    marginBottom: 15,
-    resizeMode: 'cover',
+    marginBottom: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
+  },
+  button: {
+    backgroundColor: '#000',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
   },
 });
 

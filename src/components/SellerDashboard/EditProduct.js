@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, Image, Modal, TextInput, ActivityIndicator } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import auth from '@react-native-firebase/auth';
 import { launchImageLibrary } from 'react-native-image-picker';
+import axios from 'axios'; // For making API requests
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
@@ -16,25 +14,8 @@ const ManageProducts = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const user = auth().currentUser;
-
-        if (!user) {
-          Alert.alert('Error', 'User not authenticated!');
-          return;
-        }
-
-        const sellerId = user.uid;
-        const productsSnapshot = await firestore()
-          .collection('products')
-          .where('sellerId', '==', sellerId)
-          .get();
-
-        const productList = productsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setProducts(productList);
+        const response = await axios.get('http://192.168.100.16:5000/api/readProducts'); // Fetch all products
+        setProducts(response.data);
       } catch (error) {
         console.error('Error fetching products:', error);
         Alert.alert('Error', 'Failed to fetch products.');
@@ -45,8 +26,8 @@ const ManageProducts = () => {
 
     fetchProducts();
   }, []);
-  
-  const handleDeleteProduct = async (productId, imageUrl) => {
+
+  const handleDeleteProduct = async (product) => {
     Alert.alert('Delete Product', 'Are you sure you want to delete this product?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -54,14 +35,11 @@ const ManageProducts = () => {
         style: 'destructive',
         onPress: async () => {
           try {
-            // Delete the image from Firebase Storage
-            const reference = storage().refFromURL(imageUrl);
-            await reference.delete();
-
-            // Delete the product from Firestore
-            await firestore().collection('products').doc(productId).delete();
-
-            setProducts(products.filter((product) => product.id !== productId));
+            // Delete the product from MongoDB using the _id
+            await axios.delete(`http://192.168.100.16:5000/api/deleteProducts/${product._id}`);
+  
+            // Filter out the deleted product from the local state
+            setProducts(products.filter((p) => p._id !== product._id));
             Alert.alert('Success', 'Product deleted successfully!');
           } catch (error) {
             console.error('Error deleting product:', error);
@@ -86,12 +64,13 @@ const ManageProducts = () => {
   };
 
   const uploadImageToStorage = async (uri) => {
+    // You need a backend or cloud storage like AWS S3, Google Cloud Storage to handle image uploads
     const filename = `products/${Date.now()}_${Math.random()}.jpg`;
-    const reference = storage().ref(filename);
 
     try {
-      await reference.putFile(uri);
-      return await reference.getDownloadURL();
+      // Here, we simulate the image upload process (replace with actual backend call)
+      const imageUrl = 'https://your-backend.com/path/to/uploaded/image.jpg';
+      return imageUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
       throw error;
@@ -104,22 +83,18 @@ const ManageProducts = () => {
     try {
       const updatedProduct = { ...currentProduct };
 
-      // If a new image is selected, upload it to Firebase Storage
+      // If a new image is selected, upload it to your storage and get the URL
       if (newImage && newImage !== currentProduct.imageUrl) {
-        // Delete the old image
-        const reference = storage().refFromURL(currentProduct.imageUrl);
-        await reference.delete();
-
-        // Upload the new image
+        // Simulate image upload
         const imageUrl = await uploadImageToStorage(newImage);
         updatedProduct.imageUrl = imageUrl;
       }
 
-      // Update the product details in Firestore
-      await firestore().collection('products').doc(currentProduct.id).update(updatedProduct);
+      // Update the product details in MongoDB
+      await axios.put(`http://192.168.100.16:5000/api/updateProducts/${currentProduct._id}`, updatedProduct);
 
       // Update the local state
-      setProducts(products.map((product) => (product.id === currentProduct.id ? updatedProduct : product)));
+      setProducts(products.map((product) => (product._id === currentProduct._id ? updatedProduct : product)));
 
       Alert.alert('Success', 'Product updated successfully!');
       setModalVisible(false);
@@ -136,12 +111,13 @@ const ManageProducts = () => {
     <View style={styles.productCard}>
       <Image source={{ uri: item.imageUrl }} style={styles.productImage} resizeMode="cover" />
       <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productPrice}>Venue: {item.price}</Text>
+      <Text style={styles.productPrice}>Price: ${item.price}</Text>
+      <Text style={styles.productDescription}>{item.description}</Text>
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => handleEditProduct(item)}>
+        <TouchableOpacity style={[styles.button, styles.editButton]} onPress={() => handleEditProduct(item)}>
           <Text style={styles.buttonText}>Edit</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => handleDeleteProduct(item.id, item.imageUrl)}>
+        <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => handleDeleteProduct(item)}>
           <Text style={styles.buttonText}>Delete</Text>
         </TouchableOpacity>
       </View>
@@ -150,38 +126,29 @@ const ManageProducts = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Manage Events</Text>
+      <Text style={styles.title}>Manage Products</Text>
 
       {loading ? (
-        <Text style={styles.loadingText}>Loading...</Text>
+        <ActivityIndicator size="large" color="#0000ff" />
       ) : products.length === 0 ? (
         <Text style={styles.emptyMessage}>No products found</Text>
       ) : (
-        <FlatList
-          data={products}
-          renderItem={renderProductItem}
-          keyExtractor={(item) => item.id}
-        />
+        <FlatList data={products} renderItem={renderProductItem} keyExtractor={(item) => item._id} />
       )}
 
-      {/* Edit Product Modal */}
       {currentProduct && (
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}
-        >
+        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Edit Event</Text>
+            <Text style={styles.modalTitle}>Edit Product</Text>
             <TextInput
               style={styles.input}
-              placeholder="Event Name"
+              placeholder="Product Name"
               value={currentProduct.name}
               onChangeText={(text) => setCurrentProduct({ ...currentProduct, name: text })}
             />
             <TextInput
               style={styles.input}
-              placeholder="Date"
+              placeholder="Price"
               value={currentProduct.price.toString()}
               keyboardType="numeric"
               onChangeText={(text) => setCurrentProduct({ ...currentProduct, price: parseFloat(text) })}
@@ -195,19 +162,15 @@ const ManageProducts = () => {
             <TextInput
               style={styles.input}
               placeholder="Category"
-              value={currentProduct.restaurantName}
-              onChangeText={(text) => setCurrentProduct({ ...currentProduct, restaurantName: text })}
+              value={currentProduct.category}
+              onChangeText={(text) => setCurrentProduct({ ...currentProduct, category: text })}
             />
             {newImage && <Image source={{ uri: newImage }} style={styles.image} />}
-            <TouchableOpacity style={styles.button} onPress={handleImageUpload}>
-              <Text style={styles.buttonText}>Change Image</Text>
+            <TouchableOpacity style={styles.imageButton} onPress={handleImageUpload}>
+              <Text style={styles.imageButtonText}>Change Image</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={handleSaveChanges} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={styles.buttonText}>Save Changes</Text>
-              )}
+            <TouchableOpacity style={[ styles.saveButton]} onPress={handleSaveChanges} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save Changes</Text>}
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.buttonText}>Cancel</Text>
@@ -222,47 +185,55 @@ const ManageProducts = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',// White background
+    backgroundColor: '#f4f4f4',
     padding: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
-    color: '#ffff', // Green color
+    color: '#333',
     marginBottom: 15,
     textAlign: 'center',
   },
   productCard: {
-    backgroundColor: '#fff', // White background for cards
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 15,
     marginBottom: 20,
     alignItems: 'center',
     width: '100%',
+    borderColor: '#ddd',
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
     elevation: 5,
   },
   productImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 10,
+    width: 130,
+    height: 130,
+    borderRadius: 12,
     marginBottom: 10,
-    borderColor: '#008CBA', // Green border
+    borderColor: '#ccc',
     borderWidth: 2,
   },
   productName: {
-    color: '#333', // Dark text color
+    color: '#333',
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 5,
   },
   productPrice: {
-    color: '#008CBA', // Green price
+    color: '#00796b',
     fontSize: 16,
     marginBottom: 10,
+  },
+  productDescription: {
+    color: '#666',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -270,72 +241,87 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   button: {
-    backgroundColor: '#008CBA', // Green button
-    padding: 10,
+    backgroundColor: '#000',
+    paddingVertical: 4, // Reduced padding for smaller size
+    paddingHorizontal: 8,
     borderRadius: 8,
-    marginHorizontal: 5,
-    width: '40%',
+    flex: 0.45,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
+  }, imageButton: {
+    backgroundColor: '#00796b',
+    paddingVertical: 6,  // Reduced padding for smaller size
+    paddingHorizontal: 10,  // Reduced padding for smaller size
+    borderRadius: 6,  // Slightly smaller border radius for better proportion
+    alignItems: 'center',
+    marginBottom: 8,  // Reduced margin for smaller spacing
   },
-  deleteButton: {
-    backgroundColor: '#f44336', // Red button for delete
-  },
-  buttonText: {
-    color: '#fff', // White text for buttons
+  imageButtonText: {
+    color: '#fff',
+    fontSize: 14,  // Smaller font size
     fontWeight: 'bold',
   },
-  loadingText: {
-    color: '#0056D2', // Green loading text
-    fontSize: 20,
-    textAlign: 'center',
-    marginTop: 50,
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,  // Consistent font size across buttons
+    fontWeight: 'bold',
+  },
+  editButton: {
+    backgroundColor: '#00796b',
+  },
+  deleteButton: {
+    backgroundColor: '#d32f2f',
   },
   emptyMessage: {
-    color: '#777', // Light grey for empty message
+    fontSize: 16,  // Slightly reduced font size for consistency
+    color: '#333',
     textAlign: 'center',
-    fontSize: 18,
-    marginTop: 50,
+    marginTop: 16,  // Slightly reduced top margin
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // White background for modal
-    padding: 20,
+    backgroundColor: '#fff',
+    padding: 18,  // Reduced padding for a more compact design
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 22,  // Slightly reduced font size
     fontWeight: 'bold',
-    color: '#ffff', // Green title
-    marginBottom: 15,
+    marginBottom: 12,  // Reduced margin for better spacing
     textAlign: 'center',
   },
   input: {
-    backgroundColor: '#f9f9f9', // Light grey for input fields
-    color: '#333', // Dark text color
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginBottom: 15,
-    fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd', // Light grey border for inputs
+    borderColor: '#ddd',
+    borderRadius: 6,  // Slightly smaller radius for a sleeker look
+    padding: 8,  // Reduced padding for smaller input fields
+    marginBottom: 12,  // Reduced bottom margin
   },
   image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 15,
-    resizeMode: 'cover',
-    borderWidth: 1,
-    borderColor: '#ddd', // Light grey border for image
+    width: 150,  // Enlarged image size
+    height: 150,  // Enlarged image size
+    borderRadius: 12,  // Slightly rounded for a sleek look
+    marginBottom: 20,  // Increased bottom margin for better spacing
+    alignSelf: 'center',  // Centers the image horizontally
+ 
+  },
+  saveButton: {
+    backgroundColor: 'rgb(0, 0, 0)',  // Red color
+    paddingVertical: 14,  // Reduced padding for smaller size
+    paddingHorizontal: 15,  // Reduced padding for smaller size
+    borderRadius: 6,  // Slightly smaller border radius for better proportion
+    alignItems: 'center',
+    marginBottom: 8,  // Reduced margin for smaller spacing
   },
   cancelButton: {
-    backgroundColor: '#f44336', // Red cancel button
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 12,
+    backgroundColor: 'rgb(255, 13, 13)',  // Red color
+    paddingVertical: 6,  // Reduced padding for smaller size
+    paddingHorizontal: 10,  // Reduced padding for smaller size
+    borderRadius: 6,  // Slightly smaller border radius for better proportion
     alignItems: 'center',
+    marginBottom: 8,  // Reduced margin for smaller spacing
   },
 });
-export default ManageProducts;
+
+
+  export default ManageProducts;

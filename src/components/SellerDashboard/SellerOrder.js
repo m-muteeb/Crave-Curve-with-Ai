@@ -1,204 +1,204 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import React, { useState, useEffect } from "react";
+import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
+import axios from "axios";
 
-const SellerOrder = () => {
+const OrdersList = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchSellerOrders = async () => {
+    const fetchOrders = async () => {
       try {
-        const user = auth().currentUser;
-        if (!user) {
-          console.log('No user is logged in.');
-          return;
-        }
-
-        console.log('Fetching orders for user:', user.uid);
-        const ordersSnapshot = await firestore()
-          .collection('orders')
-          .where('sellerId', '==', user.uid)
-          .get();
-
-        if (!ordersSnapshot.empty) {
-          const ordersList = ordersSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setOrders(ordersList);
-          console.log('Orders fetched:', ordersList);
-        } else {
-          setOrders([]);
-          console.log('No orders found for this seller.');
-        }
-      } catch (error) {
-        console.error('Error fetching seller orders:', error);
-        Alert.alert('Error', 'Failed to fetch orders');
+        const response = await axios.get('http://192.168.100.16:5000/api/orders'); // Fetch all orders
+        setOrders(response.data);
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || "Error fetching orders";
+        setError(errorMessage);
+        Alert.alert("Error", errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSellerOrders();
+    fetchOrders(); // Fetch orders when the component mounts
   }, []);
 
-  const handleAcceptOrder = async (orderId) => {
-    try {
-      await firestore().collection('orders').doc(orderId).update({ status: 'Accepted' });
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === orderId ? { ...order, status: 'Accepted' } : order
-        )
-      );
-      Alert.alert('Success', 'Order accepted successfully');
-      console.log('Order accepted:', orderId);
-    } catch (error) {
-      console.error('Error accepting order:', error);
-      Alert.alert('Error', 'Failed to accept order');
-    }
+  const handleStatusChange = (orderId, newStatus) => {
+    const updatedOrders = orders.map(order => {
+      if (order._id === orderId) {
+        return { ...order, status: newStatus };
+      }
+      return order;
+    });
+    setOrders(updatedOrders); // Update the orders array with the new status
+    Alert.alert('Success', `Order status updated to ${newStatus}`);
   };
 
-  const handleRejectOrder = async (orderId) => {
-    try {
-      await firestore().collection('orders').doc(orderId).update({ status: 'Rejected' });
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === orderId ? { ...order, status: 'Rejected' } : order
-        )
-      );
-      Alert.alert('Success', 'Order rejected successfully');
-      console.log('Order rejected:', orderId);
-    } catch (error) {
-      console.error('Error rejecting order:', error);
-      Alert.alert('Error', 'Failed to reject order');
-    }
-  };
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#0d6efd" />
+        <Text style={styles.loadingText}>Loading order details...</Text>
+      </View>
+    );
+  }
 
-  const renderOrderItem = ({ item }) => (
-    <View style={styles.orderItem}>
-      <Image source={{ uri: item.productImage }} style={styles.orderItemImage} />
-      <View style={styles.orderItemDetails}>
-        <Text style={styles.orderItemName}>{item.productName}</Text>
-        <Text style={styles.orderItemPrice}>Price: ${item.productPrice}</Text>
-        <Text style={styles.orderItemQuantity}>Quantity: {item.quantity}</Text>
-        <Text style={styles.orderItemDate}>
-          Date: {item.orderDate?.toDate().toLocaleDateString() || 'N/A'}
-        </Text>
-        <Text style={styles.orderStatus}>Status: {item.status || 'Pending'}</Text>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.acceptButton}
-            onPress={() => handleAcceptOrder(item.id)}
-          >
-            <Text style={styles.buttonText}>Accept</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.rejectButton}
-            onPress={() => handleRejectOrder(item.id)}
-          >
-            <Text style={styles.buttonText}>Reject</Text>
-          </TouchableOpacity>
-        </View>
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  const renderOrder = ({ item, index }) => (
+    <View style={styles.orderCard}>
+      <Text style={styles.orderNumber}>Order #{index + 1}</Text>
+      <Image
+        source={{ uri: item.productImage }}
+        style={styles.productImage}
+        resizeMode="cover"
+      />
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Order ID:</Text> {item._id}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Product Name:</Text> {item.productName}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Price:</Text> ${item.productPrice}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Status:</Text> {item.status}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>User:</Text> {item.userDetails.name}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Address:</Text> {item.userDetails.address}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Phone:</Text> {item.userDetails.phone}
+      </Text>
+      <Text style={styles.orderText}>
+        <Text style={styles.label}>Order Date:</Text> {new Date(item.orderDate).toLocaleString()}
+      </Text>
+
+      <View style={styles.buttonsContainer}>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#28a745" }]} // Green for Accept
+          onPress={() => handleStatusChange(item._id, 'Accepted')}
+        >
+          <Text style={styles.buttonText}>Accept</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#dc3545" }]} // Red for Reject
+          onPress={() => handleStatusChange(item._id, 'Rejected')}
+        >
+          <Text style={styles.buttonText}>Reject</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <Text style={styles.loadingText}>Loading Bookings...</Text>
-      ) : orders.length === 0 ? (
-        <Text style={styles.noOrdersText}>No Bookings to manage!</Text>
-      ) : (
-        <FlatList
-          data={orders}
-          renderItem={renderOrderItem}
-          keyExtractor={(item) => item.id}
-        />
-      )}
-    </View>
+    <FlatList
+      data={orders}
+      keyExtractor={(item) => item._id}
+      renderItem={renderOrder}
+      contentContainerStyle={styles.container}
+      ListHeaderComponent={<Text style={styles.headerText}>All Orders</Text>}
+    />
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    padding: 20,
+    backgroundColor: "#f4f4f9",
+  },
+  centered: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
-    padding: 10,
-  },
-  orderItem: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  orderItemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  orderItemDetails: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  orderItemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  orderItemPrice: {
-    fontSize: 14,
-    color: '#888',
-  },
-  orderItemQuantity: {
-    fontSize: 14,
-  },
-  orderItemDate: {
-    fontSize: 12,
-    color: '#888',
-  },
-  orderStatus: {
-    fontSize: 14,
-    marginTop: 5,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    marginTop: 10,
-  },
-  acceptButton: {
-    backgroundColor: '#0056D2',
-    paddingVertical: 6,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  rejectButton: {
-    backgroundColor: '#f44336',
-    paddingVertical: 6,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
-    textAlign: 'center',
     fontSize: 18,
-    color: '#888',
+    color: "#0d6efd",
+    marginTop: 10,
   },
-  noOrdersText: {
-    textAlign: 'center',
+  headerText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#343a40",
+  },
+  orderCard: {
+    backgroundColor: "#ffffff",
+    padding: 20,
+    marginBottom: 16,
+    borderRadius: 10,
+    borderLeftWidth: 5,
+    borderLeftColor: "#0d6efd", // Blue accent color on the left side
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+    transform: [{ translateX: 0 }, { translateY: 3 }],
+  },
+  orderNumber: {
     fontSize: 18,
-    color: '#888',
+    fontWeight: "bold",
+    color: "#495057",
+    marginBottom: 10,
+  },
+  orderText: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: "#495057",
+    lineHeight: 22,
+  },
+  label: {
+    fontWeight: "600",
+    color: "#0d6efd", // Blue for labels
+  },
+  productImage: {
+    width: "100%",
+    height: 200,
+    marginBottom: 16,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#e1e1e1",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  buttonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  button: {
+    padding: 10,
+    borderRadius: 5,
+    width: "48%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#dc3545",
+    textAlign: "center",
   },
 });
 
-export default SellerOrder;
+export default OrdersList;

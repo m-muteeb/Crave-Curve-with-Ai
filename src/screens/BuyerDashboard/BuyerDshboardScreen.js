@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import auth from '@react-native-firebase/auth';
 
@@ -70,20 +70,20 @@ const BuyerDashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#000',
   },
   header: {
     padding: 20,
-    backgroundColor: '#000',
+    backgroundColor: '#1C1C1C',
     borderBottomWidth: 1,
-    borderBottomColor: '#FFD700',
+    borderBottomColor: '#fff',
+    elevation: 5,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#fff',
     textAlign: 'center',
-    marginBottom: 20,
   },
   carousel: {
     marginTop: 10,
@@ -97,29 +97,31 @@ const styles = StyleSheet.create({
     width: windowWidth - 40,
     height: 200,
     borderRadius: 10,
-    borderColor: '#FFD700',
+    borderColor: '#fff',
     borderWidth: 2,
   },
   section: {
     margin: 20,
-    height: 150,  // Ensure the section has a fixed height to display the content
+    height: 150,
     borderRadius: 10,
     overflow: 'hidden',
+    backgroundColor: '#1C1C1C',
   },
   sectionImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
+    opacity: 0.7,
   },
   textOverlay: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     padding: 10,
   },
   sectionText: {
-    color: '#FFD700',
+    color: '#fff',
     fontSize: 24,
     textAlign: 'center',
   },

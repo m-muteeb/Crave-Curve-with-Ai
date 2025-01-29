@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, Modal, TextInput } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Cart = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -11,72 +11,35 @@ const Cart = ({ navigation }) => {
     paymentMethod: '',
   });
   const [placeAllOrderModalVisible, setPlaceAllOrderModalVisible] = useState(false);
-  const userId = auth().currentUser?.uid;
 
-  // Fetch cart items on mount and listen for real-time updates
+  // Fetch cart items on mount
   useEffect(() => {
-    const unsubscribe = firestore()
-      .collection('cart')
-      .where('userId', '==', userId)
-      .onSnapshot(
-        (querySnapshot) => {
-          const items = [];
-          querySnapshot.forEach((doc) => {
-            items.push({ id: doc.id, ...doc.data() });
-          });
-          setCartItems(items); // Update state with current cart items
-        },
-        (error) => {
-          console.error('Error fetching cart items:', error);
-        }
-      );
+    const fetchCartItems = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        const response = await axios.get(`http://192.168.100.16:5000/api/cart?userId=${userId}`); // Fetch user-specific cart items
+        setCartItems(response.data);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+        Alert.alert('Error', 'Failed to fetch cart items');
+      }
+    };
 
-    return () => unsubscribe(); // Cleanup listener
-  }, [userId]);
+    fetchCartItems();
+  }, []);
 
- // Function to remove item permanently from Firestore
-const handleRemoveItem = async (itemId) => {
-  try {
-    const itemRef = firestore().collection('cart').doc(itemId);
-
-    // Delete the item from Firestore
-    await itemRef.delete();
-
-    // Check if it is deleted successfully from Firestore
-    const snapshot = await itemRef.get();
-    if (!snapshot.exists) {
-      setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-      Alert.alert('Removed', 'Item removed from cart.');
-    } else {
-      Alert.alert('Error', 'Item could not be removed.');
-    }
-  } catch (error) {
-    console.error('Error removing item:', error.message);
-    Alert.alert('Error', 'Failed to remove item.');
-  }
-};
-
-// Ensure the cart items are fetched once on component mount
-useEffect(() => {
-  const fetchCartItems = async () => {
+  // Function to remove item from cart
+  const handleRemoveItem = async (itemId) => {
     try {
-      const querySnapshot = await firestore()
-        .collection('cart')
-        .where('userId', '==', userId)
-        .get();
-
-      const items = [];
-      querySnapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() });
-      });
-      setCartItems(items); // Update state with current cart items
+      await axios.delete(`http://192.168.100.16:5000/api/cart/${itemId}`);
+      setCartItems((prevItems) => prevItems.filter((item) => item._id !== itemId));
+      Alert.alert('Removed', 'Item removed from cart.');
     } catch (error) {
-      console.error('Error fetching cart items:', error);
+      console.error('Error removing item:', error);
+      Alert.alert('Error', 'Failed to remove item.');
     }
   };
 
-  fetchCartItems();
-}, [userId]);
   // Function to place an order for all items in the cart
   const handlePlaceAllOrder = async () => {
     if (!orderDetails.address || !orderDetails.paymentMethod) {
@@ -85,34 +48,23 @@ useEffect(() => {
     }
 
     try {
-      const batch = firestore().batch(); // Use batch for atomic operations
-
-      cartItems.forEach((item) => {
-        // Add each item to the "orders" collection
-        const orderRef = firestore().collection('orders').doc();
-        batch.set(orderRef, {
-          userId: userId,
-          productId: item.productId,
-          productName: item.name,
-          price: item.price,
-          imageUrl: item.imageUrl,
-          address: orderDetails.address,
-          paymentMethod: orderDetails.paymentMethod,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-        });
-
-        // Remove each item from the "cart" collection
-        const cartRef = firestore().collection('cart').doc(item.id);
-        batch.delete(cartRef);
+      const userId = await AsyncStorage.getItem('userId');
+      const response = await axios.post('http://192.168.100.16:5000/api/orders', {
+        userId,
+        cartItems,
+        address: orderDetails.address,
+        paymentMethod: orderDetails.paymentMethod,
       });
 
-      await batch.commit(); // Execute the batch operation
-
-      setCartItems([]); // Clear local state after placing order
-      setPlaceAllOrderModalVisible(false); // Close modal
-      Alert.alert('Order Placed', 'Your order has been successfully placed.');
+      if (response.status === 201) {
+        setCartItems([]); // Clear local state after placing order
+        setPlaceAllOrderModalVisible(false); // Close modal
+        Alert.alert('Order Placed', 'Your order has been successfully placed.');
+      } else {
+        throw new Error('Failed to place order');
+      }
     } catch (error) {
-      console.error('Error placing order:', error.message);
+      console.error('Error placing order:', error);
       Alert.alert('Error', 'Failed to place the order.');
     }
   };
@@ -122,13 +74,11 @@ useEffect(() => {
     <View style={styles.cartItem}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
       <View style={styles.details}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.orderItemDate}>
-          Date: {item.orderDate?.toDate().toLocaleDateString() || 'N/A'}
-        </Text>
+        <Text style={styles.name}>{item.productName}</Text>
+        <Text style={styles.price}>${item.productPrice}</Text>
         <TouchableOpacity
           style={styles.removeButton}
-          onPress={() => handleRemoveItem(item.id)}
+          onPress={() => handleRemoveItem(item._id)}
         >
           <Text style={styles.removeText}>Remove</Text>
         </TouchableOpacity>
@@ -139,19 +89,19 @@ useEffect(() => {
   return (
     <View style={styles.container}>
       {cartItems.length === 0 ? (
-        <Text style={styles.emptyText}>Your Event List is empty.</Text>
+        <Text style={styles.emptyText}>Your cart is empty.</Text>
       ) : (
         <>
           <FlatList
             data={cartItems}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item._id}
             renderItem={renderCartItem}
           />
           <TouchableOpacity
             style={styles.orderButton}
             onPress={() => setPlaceAllOrderModalVisible(true)} // Show the modal to take order details
           >
-            <Text style={styles.orderButtonText}>Book All</Text>
+            <Text style={styles.orderButtonText}>Place All Orders</Text>
           </TouchableOpacity>
         </>
       )}
@@ -165,7 +115,7 @@ useEffect(() => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Booking Details</Text>
+            <Text style={styles.modalTitle}>Order Details</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter Address"
@@ -184,7 +134,7 @@ useEffect(() => {
               style={styles.placeOrderButton}
               onPress={handlePlaceAllOrder}
             >
-              <Text style={styles.placeOrderButtonText}>Book Now</Text>
+              <Text style={styles.placeOrderButtonText}>Place Order</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.closeModalButton}
@@ -202,23 +152,23 @@ useEffect(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1fdf1',
+    backgroundColor: '#000000',
     padding: 10,
   },
   cartItem: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1c1c1c',
     borderRadius: 8,
     padding: 10,
     marginBottom: 10,
-    borderColor: '#008CBA',
+    borderColor: '#ffffff',
     borderWidth: 1,
   },
   image: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    borderColor: '#008CBA',
+    borderColor: '#ffffff',
     borderWidth: 1,
   },
   details: {
@@ -229,11 +179,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#008CBA',
+    color: '#ffffff',
   },
   price: {
     fontSize: 14,
-    color: '#333',
+    color: '#ffffff',
   },
   removeButton: {
     backgroundColor: '#FF6347',
@@ -248,7 +198,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#008CBA',
+    color: '#ffffff',
     textAlign: 'center',
     marginTop: 20,
   },
